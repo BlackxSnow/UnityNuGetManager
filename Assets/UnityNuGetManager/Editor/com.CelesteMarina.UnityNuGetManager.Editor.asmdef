@@ -1,0 +1,14 @@
+{
+    "name": "com.CelesteMarina.UnityNuGetManager.Editor",
+    "rootNamespace": "UnityNuGetManager",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

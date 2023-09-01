@@ -36,14 +36,14 @@ namespace Tests
         {
             var client = new NugetApiClient();
 
-            const string diID = "microsoft.extensions.dependencyinjection";
+            const string diID = "Microsoft.Extensions.DependencyInjection";
             RegistrationsReponse registrationsReponse =
                 await client.GetRegistrations(_TestSourceInfo, diID);
             
             Assert.Greater(registrationsReponse.Count, 0);
             Assert.Greater(registrationsReponse.Items.Length, 0);
             Assert.Greater(registrationsReponse.Items[0].Items.Length, 0);
-            Assert.AreEqual(diID, registrationsReponse.Items[0].Items[0].CatalogEntry);
+            Assert.AreEqual(diID, registrationsReponse.Items[0].Items[0].CatalogEntry.Id);
         }
 
         [Test]
