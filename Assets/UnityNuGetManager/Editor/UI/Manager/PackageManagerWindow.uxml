@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/UnityNuGetManager/Editor/UI/Manager/PackageManagerWindow.uss?fileID=7433441132597879392&amp;guid=6e016219923257ccb949fbdc2dae9358&amp;type=3#PackageManagerWindow" />
+    <ui:VisualElement name="root" style="flex-grow: 1; flex-direction: row;">
+        <ui:VisualElement name="listpanel" style="width: 35%;">
+            <ui:TextField picking-mode="Ignore" name="query" />
+            <ui:ListView name="packages" virtualization-method="DynamicHeight" style="flex-grow: 1;" />
+            <ui:VisualElement name="buttonbar" style="bottom: 0; height: 25px;" />
+            <UnityNuGetManager.UI.Manager.LoadingSpinner Rotation-Speed="720" style="width: 50px; height: 50px; position: absolute; left: 50%; top: 50%; translate: -50% -50%; background-image: url(&apos;project://database/Assets/UI%20Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss?fileID=-6527069497977903076&amp;guid=3482ac0fbe8b865a0adc75c4415758a3&amp;type=3#check-dash&apos;);" />
+        </ui:VisualElement>
+        <ui:VisualElement name="detailspanel" style="flex-grow: 1;">
+            <ui:VisualElement name="details" style="flex-grow: 1;">
+                <ui:VisualElement name="header" style="height: 75px; background-image: none; flex-direction: row;">
+                    <ui:VisualElement name="logo" style="background-image: url(&apos;project://database/Assets/UnityDefaultRuntimeTheme.tss?fileID=4584671053970592468&amp;guid=315f1d8e3c7d9a09992bbd58d4c38453&amp;type=3#console.warnicon&apos;); -unity-background-scale-mode: stretch-to-fill; width: 75px;" />
+                    <ui:VisualElement name="info" style="flex-grow: 1;">
+                        <ui:Label tabindex="-1" text="PACKAGE DISPLAY NAME" parse-escape-sequences="true" display-tooltip-when-elided="true" name="name" style="-unity-font-style: bold; font-size: 16px;" />
+                        <ui:Label tabindex="-1" text="PACKAGE AUTHOR" parse-escape-sequences="true" display-tooltip-when-elided="true" name="author" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="body" style="flex-grow: 1;">
+                    <ui:VisualElement name="categorybar" style="height: 25px;" />
+                    <ui:VisualElement name="categorypanel" style="flex-grow: 1;">
+                        <ui:VisualElement name="details" style="flex-grow: 1;">
+                            <ui:Label tabindex="-1" text="This is a package description example." parse-escape-sequences="true" display-tooltip-when-elided="true" name="description" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="buttonbar" style="height: 25px; flex-direction: row;">
+                <ui:DropdownField index="-1" choices="System.Collections.Generic.List`1[System.String]" name="version" style="flex-grow: 1;" />
+                <ui:Button text="Install" parse-escape-sequences="true" display-tooltip-when-elided="true" name="install" />
+                <ui:Button text="Modify" parse-escape-sequences="true" display-tooltip-when-elided="true" name="modify" />
+                <ui:Button text="Uninstall" parse-escape-sequences="true" display-tooltip-when-elided="true" name="uninstall" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="root" style="flex-grow: 0; flex-direction: row; max-height: none; min-height: 75px; flex-shrink: 0;">
+        <ui:VisualElement name="logo" style="width: 75px; height: 75px; background-image: url(&apos;project://database/Assets/UI%20Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss?fileID=4584671053970592468&amp;guid=3482ac0fbe8b865a0adc75c4415758a3&amp;type=3#console.warnicon&apos;);" />
+        <ui:VisualElement name="info" style="flex-grow: 1;">
+            <ui:Label tabindex="-1" text="PACKAGE DISPLAY NAME" parse-escape-sequences="true" display-tooltip-when-elided="true" name="name" style="-unity-font-style: bold;" />
+            <ui:Label tabindex="-1" text="PACKAGE AUTHOR" parse-escape-sequences="true" display-tooltip-when-elided="true" name="author" />
+            <ui:Label tabindex="-1" text="1.2.3.4-beta" parse-escape-sequences="true" display-tooltip-when-elided="true" name="version" />
+            <ui:Label tabindex="-1" text="SOURCE" parse-escape-sequences="true" display-tooltip-when-elided="true" name="source" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
