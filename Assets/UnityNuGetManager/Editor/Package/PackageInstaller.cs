@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using UnityEditor;
 using UnityEngine;
 using UnityNuGetManager.Nuspec;
 using UnityNuGetManager.Package.DependencyResolution;
@@ -26,13 +27,20 @@ namespace UnityNuGetManager.Package
         public Task AddPackage(string id, string version, bool explicitlyInstalled)
         {
             _ManifestHandler.AddPackageEntry(id, version, explicitlyInstalled);
-            throw new NotImplementedException();
+            return RestorePackages();
         }
 
-        public Task RemovePackage(string id, string version)
+        public Task ModifyPackage(string id, string version, bool explicitlyInstalled)
         {
-            _ManifestHandler.RemovePackageEntry(id, version);
-            throw new NotImplementedException();
+            _ManifestHandler.RemovePackageEntry(id);
+            _ManifestHandler.AddPackageEntry(id, version, explicitlyInstalled);
+            return RestorePackages();
+        }
+
+        public Task RemovePackage(string id)
+        {
+            _ManifestHandler.RemovePackageEntry(id);
+            return RestorePackages();
         }
 
         private static readonly Regex[] _ArchiveIgnores = new Regex[]
@@ -97,25 +105,33 @@ namespace UnityNuGetManager.Package
                 throw;
             }
         }
-
+        
         public async Task RestorePackages()
         {
-            Directory.CreateDirectory(PackageInstallPath);
-            HashSet<string> packageDirectories = Directory.GetDirectories(PackageInstallPath)
-                .Select(Path.GetFileName).ToHashSet();
-
-            IEnumerable<VersionedCatalogEntry> remaining = await Task.Run(
-                () => _DependencyResolver.Resolve(_ManifestHandler.PackageEntries.Cast<IPackageIdentifier>()));
-
-            foreach (VersionedCatalogEntry entry in remaining)
+            EditorApplication.LockReloadAssemblies();
+            try
             {
-                if (packageDirectories.Remove($"{entry.Entry.Id}.{entry.Entry.Version}")) continue;
-                await InstallSinglePackage(entry.Entry.Id, entry.Entry.Version);
+                Directory.CreateDirectory(PackageInstallPath);
+                HashSet<string> packageDirectories = Directory.GetDirectories(PackageInstallPath)
+                    .Select(Path.GetFileName).ToHashSet();
+
+                IEnumerable<VersionedCatalogEntry> remaining = await Task.Run(
+                    () => _DependencyResolver.Resolve(_ManifestHandler.PackageEntries.Cast<IPackageIdentifier>()));
+
+                foreach (VersionedCatalogEntry entry in remaining)
+                {
+                    if (packageDirectories.Remove($"{entry.Entry.Id}.{entry.Entry.Version}")) continue;
+                    await InstallSinglePackage(entry.Entry.Id, entry.Entry.Version);
+                }
+
+                foreach (string packageDirectory in packageDirectories)
+                {
+                    AssetDatabase.DeleteAsset(Path.Combine(PackageInstallPath, packageDirectory));
+                }
             }
-
-            foreach (string packageDirectory in packageDirectories)
+            finally
             {
-                Directory.Delete(packageDirectory, true);
+                EditorApplication.UnlockReloadAssemblies();
             }
         }
 

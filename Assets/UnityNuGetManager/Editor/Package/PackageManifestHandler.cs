@@ -16,15 +16,22 @@ namespace UnityNuGetManager.Package
         
         private readonly string _ManifestFilePath;
         private readonly Dictionary<string, PackageManifestEntry> _Entries;
+
+        public bool TryGetEntry(string id, out PackageManifestEntry entry)
+        {
+            return _Entries.TryGetValue(id, out entry);
+        }
         
         public void AddPackageEntry(string id, string version, bool explicitlyInstalled)
         {
-            throw new System.NotImplementedException();
+            _Entries.Add(id, new PackageManifestEntry(id, version, explicitlyInstalled));
+            Save();
         }
 
-        public void RemovePackageEntry(string id, string version)
+        public void RemovePackageEntry(string id)
         {
-            throw new System.NotImplementedException();
+            _Entries.Remove(id);
+            Save();
         }
 
         private void Load()
@@ -44,7 +51,19 @@ namespace UnityNuGetManager.Package
 
         private void Save()
         {
-            throw new NotImplementedException();
+            var doc = new XmlDocument();
+            XmlNode root = doc.AppendChild(doc.CreateElement("packages"));
+            
+            foreach ((string _, PackageManifestEntry entry) in _Entries)
+            {
+                XmlElement xmlEntry = doc.CreateElement("package");
+                xmlEntry.SetAttribute(IdKey, entry.Id);
+                xmlEntry.SetAttribute(VersionKey, entry.Version);
+                xmlEntry.SetAttribute(ExplicitInstallKey, entry.ExplicitlyInstalled.ToString());
+                root.AppendChild(xmlEntry);
+            }
+            
+            doc.Save(File.Open(_ManifestFilePath, FileMode.Create));
         }
         
         public PackageManifestHandler(string manifestFilePath)

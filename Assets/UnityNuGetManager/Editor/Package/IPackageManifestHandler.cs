@@ -6,7 +6,8 @@ namespace UnityNuGetManager.Package
     {
         IEnumerable<PackageManifestEntry> PackageEntries { get; }
 
+        public bool TryGetEntry(string id, out PackageManifestEntry entry);
         void AddPackageEntry(string id, string version, bool explicitlyInstalled);
-        void RemovePackageEntry(string id, string version);
+        void RemovePackageEntry(string id);
     }
 }
