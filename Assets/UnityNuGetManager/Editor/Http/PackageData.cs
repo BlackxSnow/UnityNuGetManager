@@ -14,15 +14,23 @@ namespace UnityNuGetManager.Http
         public string Registration;
         [JsonProperty("id")]
         public string Id;
+        [JsonProperty("version")] 
+        public string Version;
+        public PackageVersionData[] Versions;
         [JsonProperty("description")]
         public string Description;
         [JsonProperty("summary")]
         public string Summary;
         [JsonProperty("tags")]
+        [JsonConverter(typeof(ToArrayConverter<string>))]
         public string[] Tags;
         [JsonProperty("authors")]
+        [JsonConverter(typeof(ToArrayConverter<string>))]
         public string[] Authors;
+        [JsonProperty("iconUrl")] 
+        public string IconUrl;
         [JsonProperty("owners")]
+        [JsonConverter(typeof(ToArrayConverter<string>))]
         public string[] Owners;
         [JsonProperty("totalDownloads")]
         public ulong TotalDownloads;
