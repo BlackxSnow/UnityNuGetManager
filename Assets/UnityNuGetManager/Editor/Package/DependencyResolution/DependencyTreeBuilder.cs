@@ -32,6 +32,8 @@ namespace UnityNuGetManager.Package.DependencyResolution
                 StartPreparation(pending);
             }
 
+            if (IsFinished()) return rootNode;
+            
             while (true)
             {
                 DependencyNode node = await Task.Run(() => _PreparedNodes.Take(token), token);
