@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Plastic.Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -40,12 +41,12 @@ namespace UnityNuGetManager.UI.Manager
         {
             string data = EditorPrefs.GetString(WindowDataKey);
             if (string.IsNullOrWhiteSpace(data)) return;
-            JsonUtility.FromJsonOverwrite(data, this);
+            EditorJsonUtility.FromJsonOverwrite(data, this);
         }
 
         private void OnDisable()
         {
-            string data = JsonUtility.ToJson(this, false);
+            string data = EditorJsonUtility.ToJson(this, false);
             EditorPrefs.SetString(WindowDataKey, data);
         }
 

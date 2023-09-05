@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/UnityNuGetManager/Editor/UI/Manager/PackageManagerWindow.uss?fileID=7433441132597879392&amp;guid=6e016219923257ccb949fbdc2dae9358&amp;type=3#PackageManagerWindow" />
+    <Style src="PackageManagerWindow.uss" />
     <ui:VisualElement name="root" style="flex-grow: 1; flex-direction: row;">
         <ui:VisualElement name="listpanel" style="width: 35%;">
             <ui:TextField picking-mode="Ignore" name="query" view-data-key="package-query" />
