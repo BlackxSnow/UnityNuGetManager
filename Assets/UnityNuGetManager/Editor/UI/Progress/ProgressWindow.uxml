@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="info" style="flex-grow: 1;">
+        <ui:TreeView view-data-key="unity-tree-view" focusable="true" selection-type="None" show-border="false" name="task-tree" auto-expand="true" />
+    </ui:VisualElement>
+    <ui:Button text="Cancel" parse-escape-sequences="true" display-tooltip-when-elided="true" name="cancel" />
+</ui:UXML>
