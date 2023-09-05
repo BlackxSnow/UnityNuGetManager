@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEditor;
 using UnityEditor.VersionControl;
+using UnityEngine;
 using UnityEngine.UIElements;
 using UnityNuGetManager.Extensions;
 using PackageInfo = UnityNuGetManager.Package.PackageInfo;
+using Task = System.Threading.Tasks.Task;
 
 namespace UnityNuGetManager.UI.Manager
 {
@@ -13,17 +16,17 @@ namespace UnityNuGetManager.UI.Manager
     {
         public VisualElement Root { get; }
 
-        private VisualElement _PackageLogo;
-        private Label _PackageName;
-        private Label _PackageAuthor;
+        private readonly VisualElement _PackageLogo;
+        private readonly Label _PackageName;
+        private readonly Label _PackageAuthor;
 
-        private VisualElement _DetailsPanel;
-        private Label _Description;
+        private readonly VisualElement _DetailsPanel;
+        private readonly Label _Description;
 
-        private DropdownField _VersionDropdown;
-        private Button _Install;
-        private Button _Modify;
-        private Button _Uninstall;
+        private readonly DropdownField _VersionDropdown;
+        private readonly Button _Install;
+        private readonly Button _Modify;
+        private readonly Button _Uninstall;
 
         private PackageInfo _Data;
         
@@ -46,9 +49,13 @@ namespace UnityNuGetManager.UI.Manager
             choices.Sort((a, b) => string.Compare(b, a, StringComparison.Ordinal));
             _VersionDropdown.choices = choices;
             _VersionDropdown.index = 0;
+            VersionDropdownChanged(_VersionDropdown.value);
         }
 
-        private void VersionDropdownChanged(ChangeEvent<string> changeEvent)
+        private void VersionDropdownChanged(ChangeEvent<string> changeEvent) =>
+            VersionDropdownChanged(changeEvent.newValue);
+
+        private void VersionDropdownChanged(string value)
         {
             if (!_Data.IsInstalled)
             {
