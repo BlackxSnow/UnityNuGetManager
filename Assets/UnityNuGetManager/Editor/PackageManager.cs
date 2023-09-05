@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityNuGetManager.Config;
 using UnityNuGetManager.NuGetApi;
@@ -12,6 +14,10 @@ namespace UnityNuGetManager
         private static PackageManager _Instance;
         public static PackageManager Instance => _Instance ??= new PackageManager();
 
+        public static SynchronizationContext UnitySyncContext { get; } = SynchronizationContext.Current;
+        
+        internal const string PackagePrefx = "celestemarina.unitynugetmanager";
+        
         public Configuration Configuration { get; }
         public IPackageSourceConfigHandler SourceConfigHandler { get; }
         public IPackageSourceCredentialsConfigHandler SourceCredentialsConfigHandler { get; }

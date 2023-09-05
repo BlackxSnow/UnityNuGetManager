@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityNuGetManager.Http;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
 using PackageInfo = UnityNuGetManager.Package.PackageInfo;
 
 namespace UnityNuGetManager.UI.Manager
@@ -22,12 +24,29 @@ namespace UnityNuGetManager.UI.Manager
         private List<PackageInfo> _Packages;
 
         private bool _IsRefreshing;
-        
+
+        [SerializeField, HideInInspector] private string _LastQuery;
+
+        internal const string WindowDataKey = PackageManager.PackagePrefx + ".packagemanagerwindow";
+
         [MenuItem("NuGet/Package Manager")]
         private static void CreateWindow()
         {
             var window = GetWindow<PackageManagerWindow>();
             window.titleContent = new GUIContent("NuGet Package Manager");
+        }
+
+        private void OnEnable()
+        {
+            string data = EditorPrefs.GetString(WindowDataKey);
+            if (string.IsNullOrWhiteSpace(data)) return;
+            JsonUtility.FromJsonOverwrite(data, this);
+        }
+
+        private void OnDisable()
+        {
+            string data = JsonUtility.ToJson(this, false);
+            EditorPrefs.SetString(WindowDataKey, data);
         }
 
         public void CreateGUI()
