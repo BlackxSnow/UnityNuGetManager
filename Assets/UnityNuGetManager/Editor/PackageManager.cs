@@ -1,11 +1,12 @@
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityNuGetManager.Config;
 using UnityNuGetManager.NuGetApi;
 using UnityNuGetManager.Package;
 using UnityNuGetManager.Package.DependencyResolution;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
+using UnityNuGetManager.UI.Progress;
 
 namespace UnityNuGetManager
 {
@@ -34,9 +35,13 @@ namespace UnityNuGetManager
         [MenuItem("NuGet/Restore")]
         public static void Restore()
         {
-            Instance.Installer.RestorePackages();
+            var progressWindow = EditorWindow.CreateWindow<ProgressWindow>();
+            var scope = new JobScope<string>($"Restoring Packages");
+            using var context = new TaskContext(scope, progressWindow.AssignTask(scope));
+            Instance.Installer.RestorePackages(context);
+            progressWindow.ShowModal();
         }
-        
+
         public PackageManager()
         {
             Configuration = new Configuration("Assets/NuGet.config");

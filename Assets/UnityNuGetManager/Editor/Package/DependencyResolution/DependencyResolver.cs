@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityNuGetManager.NuGetApi;
+using UnityNuGetManager.TaskHandling;
 using UnityNuGetManager.Version;
 
 namespace UnityNuGetManager.Package.DependencyResolution
@@ -9,9 +10,10 @@ namespace UnityNuGetManager.Package.DependencyResolution
     {
         private readonly IPackageAccessor _Accessor;
         
-        public async Task<IEnumerable<VersionedCatalogEntry>> Resolve(IEnumerable<IPackageIdentifier> rootPackages)
+        public async Task<IEnumerable<VersionedCatalogEntry>> Resolve(IEnumerable<IPackageIdentifier> rootPackages, 
+            TaskContext context)
         {
-            DependencyNode root = await BuildDependencyTree(rootPackages);
+            DependencyNode root = await BuildDependencyTree(rootPackages, context);
             return FlattenDependencyTree(root);
         }
 
@@ -35,10 +37,11 @@ namespace UnityNuGetManager.Package.DependencyResolution
             return flattenedDependencies.Values;
         }
 
-        private async Task<DependencyNode> BuildDependencyTree(IEnumerable<IPackageIdentifier> packages)
+        private async Task<DependencyNode> BuildDependencyTree(IEnumerable<IPackageIdentifier> packages, TaskContext context)
         {
+            using TaskContext buildContext = context.CreateSub($"Build dependency tree");
             var builder = new DependencyTreeBuilder(_Accessor);
-            return await builder.Build(packages);
+            return await builder.Build(packages, buildContext);
         }
 
         public DependencyResolver(IPackageAccessor accessor)

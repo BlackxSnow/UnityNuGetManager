@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityNuGetManager.Http;
 using UnityNuGetManager.NuGetApi;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
 
 namespace UnityNuGetManager.Package
 {
@@ -12,13 +13,13 @@ namespace UnityNuGetManager.Package
         private readonly IPackageSourceManager _SourceManager;
         private readonly INugetApiClient _Client; 
         
-        public async Task<Dictionary<IPackageSourceInfo, QueryResponse>> QueryPackages(string query)
+        public async Task<Dictionary<IPackageSourceInfo, QueryResponse>> QueryPackages(string query, TaskContext context)
         {
             Dictionary<IPackageSourceInfo, QueryResponse> responses = new();
 
             foreach (IPackageSourceInfo source in _SourceManager.GetSources())
             {
-                QueryResponse queryResponse = await _Client.QueryPackages(source, query, false);
+                QueryResponse queryResponse = await _Client.QueryPackages(source, query, context, false);
                 if (queryResponse == null) continue;
                 responses.Add(source, queryResponse);
             }
@@ -26,11 +27,11 @@ namespace UnityNuGetManager.Package
             return responses;
         }
 
-        public async Task<PackageAccessorResult<RegistrationsReponse>> GetRegistrations(string id)
+        public async Task<PackageAccessorResult<RegistrationsReponse>> GetRegistrations(string id, TaskContext context)
         {
             foreach (IPackageSourceInfo source in _SourceManager.GetSources())
             {
-                RegistrationsReponse response = await _Client.GetRegistrations(source, id, false);
+                RegistrationsReponse response = await _Client.GetRegistrations(source, id, context, false);
                 if (response == null) continue;
 
                 return new PackageAccessorResult<RegistrationsReponse>(response, source);
@@ -39,17 +40,17 @@ namespace UnityNuGetManager.Package
             return null;
         }
 
-        public Task<RegistrationsReponse> GetRegistrationsDirect(string url)
+        public Task<RegistrationsReponse> GetRegistrationsDirect(string url, TaskContext context)
         {
-            return _Client.GetRegistrations(url, false);
+            return _Client.GetRegistrations(url, context, false);
         }
 
-        public Task<PackageAccessorResult<DownloadResult>> TryDownloadPackage(string id, string version)
+        public Task<PackageAccessorResult<DownloadResult>> TryDownloadPackage(string id, string version, TaskContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public Task<PackageAccessorResult<Stream>> DownloadPackage(string id, string version)
+        public Task<PackageAccessorResult<Stream>> DownloadPackage(string id, string version, TaskContext context)
         {
             throw new System.NotImplementedException();
         }

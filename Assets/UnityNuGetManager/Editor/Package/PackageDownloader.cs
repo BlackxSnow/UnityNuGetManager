@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityNuGetManager.Http;
 using UnityNuGetManager.NuGetApi;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
 
 namespace UnityNuGetManager.Package
 {
@@ -12,11 +13,11 @@ namespace UnityNuGetManager.Package
         private readonly INugetApiClient _ApiClient;
         private readonly IPackageSourceManager _SourceManager;
         
-        public async Task<bool> TryDownloadPackage(string targetPath, string id, string version)
+        public async Task<bool> TryDownloadPackage(string targetPath, string id, string version, TaskContext context)
         {
             foreach (IPackageSourceInfo source in _SourceManager.GetSources())
             {
-                DownloadResult downloadResult = await _ApiClient.TryDownloadPackage(source, id, version);
+                DownloadResult downloadResult = await _ApiClient.TryDownloadPackage(source, id, version, context);
                 if (!downloadResult.Succeeded) continue;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
@@ -28,9 +29,9 @@ namespace UnityNuGetManager.Package
             return false;
         }
 
-        public async Task DownloadPackage(string targetPath, string id, string version)
+        public async Task DownloadPackage(string targetPath, string id, string version, TaskContext context)
         {
-            if (!await TryDownloadPackage(targetPath, id, version)) throw new Exception();
+            if (!await TryDownloadPackage(targetPath, id, version, context)) throw new Exception();
         }
 
         public PackageDownloader(INugetApiClient apiClient, IPackageSourceManager sourceManager)

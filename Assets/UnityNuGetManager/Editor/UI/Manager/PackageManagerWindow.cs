@@ -56,8 +56,13 @@ namespace UnityNuGetManager.UI.Manager
             _QueryField = rootVisualElement.Q<TextField>("query");
             _PackageListView = rootVisualElement.Q<ListView>("packages");
             _DetailsWidget = new PackageDetailsWidget(rootVisualElement.Q("detailspanel"));
-            
-            if (_Packages == null) RefreshPackages();
+
+            if (_Packages == null)
+            {
+                var context = new TaskContext(new JobScope<string>("Refreshing packages"), new CancellationToken());
+                
+                RefreshPackages(context, _LastQuery);
+            }
 
             _PackageListView.makeItem = () => new PackageInfoWidget();
             _PackageListView.bindItem = (element, index) =>
@@ -77,7 +82,9 @@ namespace UnityNuGetManager.UI.Manager
         private void OnQuerySubmit(KeyUpEvent keyUp)
         {
             if (keyUp.keyCode != KeyCode.Return) return;
-            RefreshPackages(_QueryField.value);
+            var context = new TaskContext(new JobScope<string>("Refreshing packages"), new CancellationToken());
+            _LastQuery = _QueryField.value;
+            RefreshPackages(context, _LastQuery);
         }
         
         private void OnPackageSelected(IEnumerable<object> selections)
@@ -86,7 +93,7 @@ namespace UnityNuGetManager.UI.Manager
             _DetailsWidget.SetData(selectedInfo);
         }
 
-        private async void RefreshPackages(string query = "")
+        private async void RefreshPackages(TaskContext context, string query = "")
         {
             _IsRefreshing = true;
             _DetailsWidget.SetData(null);
@@ -101,7 +108,7 @@ namespace UnityNuGetManager.UI.Manager
             packagesList.style.display = DisplayStyle.None;
             spinner.Enable();
 
-            await GetPackages(query);
+            await GetPackages(context, query);
             
             packagesList.style.display = DisplayStyle.Flex;
             spinner.Disable();
@@ -110,10 +117,10 @@ namespace UnityNuGetManager.UI.Manager
             _IsRefreshing = false;
         }
         
-        private async Task GetPackages(string query = "")
+        private async Task GetPackages(TaskContext context, string query = "")
         {
             Dictionary<IPackageSourceInfo, QueryResponse> responses =
-                await PackageManager.Instance.Accessor.QueryPackages(query);
+                await PackageManager.Instance.Accessor.QueryPackages(query, context);
 
             _Packages.AddRange(responses.SelectMany(pair =>
             {

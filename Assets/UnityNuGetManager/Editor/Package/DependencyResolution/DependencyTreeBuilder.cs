@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityNuGetManager.NuGetApi;
+using UnityNuGetManager.TaskHandling;
 using UnityNuGetManager.Version;
 
 namespace UnityNuGetManager.Package.DependencyResolution
@@ -14,22 +15,24 @@ namespace UnityNuGetManager.Package.DependencyResolution
     public class DependencyTreeBuilder : IDisposable
     {
         private int _ActivePrepareTasks;
-        public readonly CancellationTokenSource CancellationSource = new();
+        private CancellationTokenSource _CancellationSource;
         private readonly BlockingCollection<DependencyNode> _PreparedNodes = new();
 
         private readonly IPackageAccessor _Accessor;
 
         private readonly Dictionary<string, DependencyNode> _ResolvedNodes = new();
 
-        public async Task<DependencyNode> Build(IEnumerable<IPackageIdentifier> initialSet)
+        public async Task<DependencyNode> Build(IEnumerable<IPackageIdentifier> initialSet, TaskContext context)
         {
-            CancellationToken token = CancellationSource.Token;
+            _CancellationSource = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+            CancellationToken token = _CancellationSource.Token;
             var rootNode = new DependencyNode();
             
             foreach (IPackageIdentifier id in initialSet)
             {
                 var pending = new PendingNode(rootNode, new Dependency { Id = id.Id, Range = id.Version });
-                StartPreparation(pending);
+                using TaskContext prepContext = context.CreateSub($"Preparing data for {id.Id}.{id.Version}");
+                StartPreparation(pending, prepContext);
             }
 
             if (IsFinished()) return rootNode;
@@ -39,7 +42,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
                 DependencyNode node = await Task.Run(() => _PreparedNodes.Take(token), token);
                 token.ThrowIfCancellationRequested();
 
-                ProcessNode(node, token);
+                ProcessNode(node, context);
                 if (IsFinished()) break;
             }
 
@@ -48,38 +51,44 @@ namespace UnityNuGetManager.Package.DependencyResolution
 
         private bool IsFinished()
         {
-            return _ActivePrepareTasks == 0 && !CancellationSource.IsCancellationRequested && _PreparedNodes.Count == 0;
+            return _ActivePrepareTasks == 0 && !_CancellationSource.IsCancellationRequested && _PreparedNodes.Count == 0;
         }
         
-        private void StartPreparation(PendingNode toPrepare)
+        private void StartPreparation(PendingNode toPrepare, TaskContext context)
         {
             Interlocked.Increment(ref _ActivePrepareTasks);
-            Task.Run(() => PrepareNode(toPrepare, CancellationSource.Token))
-                .ContinueWith(t => PreparationFinished(t, CancellationSource.Token));
+            Task.Run(() => PrepareNode(toPrepare, context), context.Token)
+                .ContinueWith(t => PreparationFinished(t, context), context.Token);
         }
 
-        private void PreparationFinished(Task<DependencyNode> prepared, CancellationToken token)
+        private void PreparationFinished(Task<DependencyNode> prepared, TaskContext context)
         {
             if (prepared.IsFaulted)
             {
-                CancellationSource.Cancel();
-                return;
+                Debug.LogException(prepared.Exception);
+                _CancellationSource.Cancel();
+                throw prepared.Exception;
             }
-            if (token.IsCancellationRequested) return;
+            if (context.Token.IsCancellationRequested) return;
                 
-            _PreparedNodes.Add(prepared.Result, token);
+            _PreparedNodes.Add(prepared.Result, context.Token);
             Interlocked.Decrement(ref _ActivePrepareTasks);
         }
 
-        private async Task<DependencyNode> PrepareNode(PendingNode node, CancellationToken token)
+        private async Task<DependencyNode> PrepareNode(PendingNode node, TaskContext context)
         {
-            RegistrationsReponse registrations =
-                await _Accessor.GetRegistrationsDirect(node.DependencyEntry.Registration) ??
-                (await _Accessor.GetRegistrations(node.DependencyEntry.Id))?.Result;
+
+            RegistrationsReponse registrations;
+            using (TaskContext registrationContext =
+                   context.CreateSub($"Getting registrations data for {node.DependencyEntry.Id}"))
+            {
+                registrations = await _Accessor.GetRegistrationsDirect(node.DependencyEntry.Registration, registrationContext) ??
+                                (await _Accessor.GetRegistrations(node.DependencyEntry.Id, registrationContext))?.Result;
+            }
 
             if (registrations == null)
             {
-                CancellationSource.Cancel();
+                _CancellationSource.Cancel();
                 throw new InvalidDataException($"Unable to retrieve registrations data for {node.DependencyEntry.Id}.");
             }
 // TODO: fix version is minumum
@@ -88,7 +97,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
             return processedNode;
         }
 
-        private void ProcessNode(DependencyNode node, CancellationToken token)
+        private void ProcessNode(DependencyNode node, TaskContext context)
         {
             node.SelectedEntry = GetBestVersion(node);
             if (_ResolvedNodes.TryGetValue(node.Id, out DependencyNode previousNode))
@@ -97,10 +106,10 @@ namespace UnityNuGetManager.Package.DependencyResolution
             }
             else _ResolvedNodes.Add(node.Id, node);
             
-            QueueDependenciesForPreparation(node);
+            QueueDependenciesForPreparation(node, context);
         }
 
-        private void QueueDependenciesForPreparation(DependencyNode node)
+        private void QueueDependenciesForPreparation(DependencyNode node, TaskContext context)
         {
             DependencyGroup[] groups = node.SelectedEntry.Entry.DependencyGroups;
             VersionData<DependencyGroup> selectedGroup = VersionResolver.GetBestDotNetVersion(groups);
@@ -108,7 +117,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
             Dependency[] dependencies = selectedGroup.SelectedTarget.Dependencies;
             foreach (PendingNode pendingNode in dependencies.Select(d => new PendingNode(node, d)))
             {
-                StartPreparation(pendingNode);                
+                StartPreparation(pendingNode, context);
             }
         }
         

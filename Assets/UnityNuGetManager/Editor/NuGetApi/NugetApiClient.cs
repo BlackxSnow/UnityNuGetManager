@@ -9,6 +9,7 @@ using Unity.Plastic.Newtonsoft.Json;
 using UnityNuGetManager.Extensions;
 using UnityNuGetManager.Http;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
 
 namespace UnityNuGetManager.NuGetApi
 {
@@ -21,56 +22,56 @@ namespace UnityNuGetManager.NuGetApi
             if (source.IsDisposed) throw new ObjectDisposedException(nameof(PackageSourceInfo));
         }
         
-        public async Task<QueryResponse> QueryPackages(IPackageSourceInfo source, string query, bool throwOnFail = true)
+        public async Task<QueryResponse> QueryPackages(IPackageSourceInfo source, string query, TaskContext context, bool throwOnFail = true)
         {
             ThrowIfSourceDisposed(source);
             await source.Initialised.AsTask(source.DisposedToken);
             
             var queryTarget = $"{source.QueryUrl}?semVerLevel=2.0.0&q={query}";
-            return await GetAsObject<QueryResponse>(source, queryTarget, throwOnFail);
+            return await GetAsObject<QueryResponse>(source, queryTarget, context, throwOnFail);
         }
 
-        public async Task<RegistrationsReponse> GetRegistrations(IPackageSourceInfo source, string id, bool throwOnFail = true)
+        public async Task<RegistrationsReponse> GetRegistrations(IPackageSourceInfo source, string id, TaskContext context, bool throwOnFail = true)
         {
             ThrowIfSourceDisposed(source);
             await source.Initialised.AsTask(source.DisposedToken);
 
             string registrationTarget = Path.Combine(source.RegistrationsUrl, id.ToLower(), "index.json");
-            return await GetAsObject<RegistrationsReponse>(source, registrationTarget, throwOnFail);
+            return await GetAsObject<RegistrationsReponse>(source, registrationTarget, context, throwOnFail);
         }
 
-        public async Task<RegistrationsReponse> GetRegistrations(string url, bool throwOnFail = true)
+        public async Task<RegistrationsReponse> GetRegistrations(string url, TaskContext context, bool throwOnFail = true)
         {
             if (url == null) return throwOnFail ? throw new ArgumentNullException() : null;
-            return await GetAsObject<RegistrationsReponse>(url);
+            return await GetAsObject<RegistrationsReponse>(url, context);
         }
         
-        public async Task<DownloadResult> TryDownloadPackage(IPackageSourceInfo source, string id, string version)
+        public async Task<DownloadResult> TryDownloadPackage(IPackageSourceInfo source, string id, string version, TaskContext context)
         {
             ThrowIfSourceDisposed(source);
             await source.Initialised.AsTask(source.DisposedToken);
             
             string downloadAddress = Path.Combine(source.BaseAddress, id, version, $"{id}.{version}.nupkg");
             HttpResponseMessage response =
-                await _Client.SendAsync(new HttpRequestMessage(HttpMethod.Get, downloadAddress));
+                await _Client.SendAsync(new HttpRequestMessage(HttpMethod.Get, downloadAddress), context.Token);
             return response.IsSuccessStatusCode
                 ? new DownloadResult(true, await response.Content.ReadAsStreamAsync(), response.StatusCode)
                 : new DownloadResult(false, null, response.StatusCode);
         }
 
-        public async Task<Stream> DownloadPackage(IPackageSourceInfo source, string id, string version)
+        public async Task<Stream> DownloadPackage(IPackageSourceInfo source, string id, string version, TaskContext context)
         {
-            DownloadResult result = await TryDownloadPackage(source, id, version);
+            DownloadResult result = await TryDownloadPackage(source, id, version, context);
             return result.Succeeded
                 ? result.Data
                 : throw new HttpRequestException(
                     $"Download of {id}.{version} failed with status {result.StatusCode}.");
         }
 
-        private async Task<T> GetAsObject<T>(IPackageSourceInfo source, string url, bool throwOnFail = true)
+        private async Task<T> GetAsObject<T>(IPackageSourceInfo source, string url, TaskContext context, bool throwOnFail = true)
         {
             HttpRequestMessage request = BuildRequest(source, HttpMethod.Get, url);
-            HttpResponseMessage response = await _Client.SendAsync(request);
+            HttpResponseMessage response = await _Client.SendAsync(request, context.Token);
             if (!response.IsSuccessStatusCode)
             {
                 return throwOnFail
@@ -81,10 +82,10 @@ namespace UnityNuGetManager.NuGetApi
 
             return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
         }
-        private async Task<T> GetAsObject<T>(string url, bool throwOnFail = true)
+        private async Task<T> GetAsObject<T>(string url, TaskContext context, bool throwOnFail = true)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            HttpResponseMessage response = await _Client.SendAsync(request);
+            HttpResponseMessage response = await _Client.SendAsync(request, context.Token);
             if (!response.IsSuccessStatusCode)
             {
                 return throwOnFail
@@ -96,7 +97,7 @@ namespace UnityNuGetManager.NuGetApi
             return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
         }
 
-        private HttpRequestMessage BuildRequest(IPackageSourceInfo source, HttpMethod method, string url)
+        private static HttpRequestMessage BuildRequest(IPackageSourceInfo source, HttpMethod method, string url)
         {
             var request = new HttpRequestMessage(method, url);
             

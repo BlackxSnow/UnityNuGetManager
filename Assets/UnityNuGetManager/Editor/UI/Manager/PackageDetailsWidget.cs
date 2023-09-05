@@ -7,6 +7,8 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityNuGetManager.Extensions;
+using UnityNuGetManager.TaskHandling;
+using UnityNuGetManager.UI.Progress;
 using PackageInfo = UnityNuGetManager.Package.PackageInfo;
 using Task = System.Threading.Tasks.Task;
 
@@ -65,7 +67,7 @@ namespace UnityNuGetManager.UI.Manager
                 return;
             }
 
-            if (_Data.InstalledVersion == changeEvent.newValue)
+            if (_Data.InstalledVersion == value)
             {
                 _Uninstall.SetDisplay(true);
                 _Modify.SetDisplay(false);
@@ -77,30 +79,53 @@ namespace UnityNuGetManager.UI.Manager
             _Modify.SetDisplay(true);
             _Install.SetDisplay(false);
         }
+
+        private static void DoTaskWithProgress(string scopeName, Func<TaskContext, Task> task)
+        {
+            async void RunTask(TaskContext context, CancellationTokenSource tokenSource)
+            {
+                try
+                {
+                    await task(context);
+                    context.Dispose();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    tokenSource.Cancel();
+                    throw;
+                }
+            }
+            
+            var masterTokenSource = new CancellationTokenSource();
+            var progressWindow = EditorWindow.CreateWindow<ProgressWindow>();
+            var jobScope = new JobScope<string>(scopeName);
+            var context = new TaskContext(jobScope, progressWindow.AssignTask(jobScope, masterTokenSource.Token));
+            RunTask(context, masterTokenSource);
+            progressWindow.ShowModal();
+        }
         
-        
-        
-        private async void Install()
+        private void Install()
         {
             string version = _VersionDropdown.value;
-            EditorUtility.DisplayProgressBar("Installing package", $"Installing {_Data.Id}.{version}", 0);
-            await PackageManager.Instance.Installer.AddPackage(_Data.Id, version, true);
-            EditorUtility.ClearProgressBar();
+            DoTaskWithProgress($"Install {_Data.Id}.{version}", (context) => 
+                PackageManager.Instance.Installer.AddPackage(_Data.Id, version, true, context));
+            VersionDropdownChanged(_VersionDropdown.value);
         }
 
-        private async void Modify()
+        private void Modify()
         {
             string version = _VersionDropdown.value;
-            EditorUtility.DisplayProgressBar("Modifying package", $"Modifying to {_Data.Id}.{version}", 0);
-            await PackageManager.Instance.Installer.ModifyPackage(_Data.Id, version, true);
-            EditorUtility.ClearProgressBar();
+            DoTaskWithProgress($"Modify {_Data.Id} from {_Data.InstalledVersion} to {version}", (context) => 
+                PackageManager.Instance.Installer.ModifyPackage(_Data.Id, version, true, context));
+            VersionDropdownChanged(_VersionDropdown.value);
         }
 
-        private async void Uninstall()
+        private void Uninstall()
         {
-            EditorUtility.DisplayProgressBar("Removing package", $"Removing {_Data.Id}", 0);
-            await PackageManager.Instance.Installer.RemovePackage(_Data.Id);
-            EditorUtility.ClearProgressBar();
+            DoTaskWithProgress($"Remove {_Data.Id}",
+                (context) => PackageManager.Instance.Installer.RemovePackage(_Data.Id, context));
+            VersionDropdownChanged(_VersionDropdown.value);
         }
         
         public PackageDetailsWidget(VisualElement detailsRoot)

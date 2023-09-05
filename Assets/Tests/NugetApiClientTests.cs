@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Tests.Mock;
@@ -6,6 +7,7 @@ using UnityNuGetManager.Config.Data;
 using UnityNuGetManager.Http;
 using UnityNuGetManager.NuGetApi;
 using UnityNuGetManager.Source;
+using UnityNuGetManager.TaskHandling;
 
 namespace Tests
 {
@@ -23,7 +25,8 @@ namespace Tests
         public async Task QueryPackages()
         {
             var client = new NugetApiClient();
-            QueryResponse queryResult = await client.QueryPackages(_TestSourceInfo, "Microsoft");
+            var context = new TaskContext(null, new CancellationToken());
+            QueryResponse queryResult = await client.QueryPackages(_TestSourceInfo, "Microsoft", context);
             
             Assert.NotNull(queryResult);
             Assert.NotNull(queryResult.Data);
@@ -37,8 +40,9 @@ namespace Tests
             var client = new NugetApiClient();
 
             const string diID = "Microsoft.Extensions.DependencyInjection";
+            var context = new TaskContext(null, new CancellationToken());
             RegistrationsReponse registrationsReponse =
-                await client.GetRegistrations(_TestSourceInfo, diID);
+                await client.GetRegistrations(_TestSourceInfo, diID, context);
             
             Assert.Greater(registrationsReponse.Count, 0);
             Assert.Greater(registrationsReponse.Items.Length, 0);
@@ -47,16 +51,12 @@ namespace Tests
         }
 
         [Test]
-        public async Task GetRegistrationLeaf()
-        {
-            
-        }
-        
-        [Test]
         public async Task DownloadPackage()
         {
             var client = new NugetApiClient();
-            DownloadResult result = await client.TryDownloadPackage(_TestSourceInfo, "Microsoft.Extensions.DependencyInjection", "7.0.0");
+            var context = new TaskContext(null, new CancellationToken());
+            DownloadResult result = await client.TryDownloadPackage(_TestSourceInfo,
+                "Microsoft.Extensions.DependencyInjection", "7.0.0", context);
             
             Assert.NotNull(result);
             Assert.True(result.Succeeded);

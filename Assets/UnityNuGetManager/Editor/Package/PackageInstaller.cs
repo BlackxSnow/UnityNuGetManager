@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityNuGetManager.Nuspec;
 using UnityNuGetManager.Package.DependencyResolution;
+using UnityNuGetManager.TaskHandling;
 using UnityNuGetManager.Version;
 
 namespace UnityNuGetManager.Package
@@ -24,23 +25,23 @@ namespace UnityNuGetManager.Package
         private readonly IDependencyResolver _DependencyResolver;
         
         
-        public Task AddPackage(string id, string version, bool explicitlyInstalled)
+        public Task AddPackage(string id, string version, bool explicitlyInstalled, TaskContext context)
         {
             _ManifestHandler.AddPackageEntry(id, version, explicitlyInstalled);
-            return RestorePackages();
+            return RestorePackages(context);
         }
 
-        public Task ModifyPackage(string id, string version, bool explicitlyInstalled)
+        public Task ModifyPackage(string id, string version, bool explicitlyInstalled, TaskContext context)
         {
             _ManifestHandler.RemovePackageEntry(id);
             _ManifestHandler.AddPackageEntry(id, version, explicitlyInstalled);
-            return RestorePackages();
+            return RestorePackages(context);
         }
 
-        public Task RemovePackage(string id)
+        public Task RemovePackage(string id, TaskContext context)
         {
             _ManifestHandler.RemovePackageEntry(id);
-            return RestorePackages();
+            return RestorePackages(context);
         }
 
         private static readonly Regex[] _ArchiveIgnores = new Regex[]
@@ -57,10 +58,10 @@ namespace UnityNuGetManager.Package
             return _ArchiveIgnores.Any(reg => reg.IsMatch(path));
         }
         
-        private async Task InstallSinglePackage(string id, string version)
+        private async Task InstallSinglePackage(string id, string version, TaskContext context)
         {
             Directory.CreateDirectory(PackageInstallPath);
-            string packagePath = await _PackageCacheManager.GetPackageArchive(id, version);
+            string packagePath = await _PackageCacheManager.GetPackageArchive(id, version, context);
             Debug.Assert(File.Exists(packagePath));
             using ZipArchive archive = ZipFile.OpenRead(packagePath);
 
@@ -105,8 +106,17 @@ namespace UnityNuGetManager.Package
                 throw;
             }
         }
-        
-        public async Task RestorePackages()
+
+        private async Task<IEnumerable<VersionedCatalogEntry>> ResolveDependencies(TaskContext sourceContext)
+        {
+            using var resolveContext =
+                new TaskContext(sourceContext.Scope?.CreateSubScope($"Resolve dependencies"), sourceContext.Token);
+            return await Task.Run(
+                () => _DependencyResolver.Resolve(_ManifestHandler.PackageEntries.Cast<IPackageIdentifier>(),
+                    resolveContext), resolveContext.Token);
+        }
+
+        public async Task RestorePackages(TaskContext context)
         {
             EditorApplication.LockReloadAssemblies();
             try
@@ -115,13 +125,15 @@ namespace UnityNuGetManager.Package
                 HashSet<string> packageDirectories = Directory.GetDirectories(PackageInstallPath)
                     .Select(Path.GetFileName).ToHashSet();
 
-                IEnumerable<VersionedCatalogEntry> remaining = await Task.Run(
-                    () => _DependencyResolver.Resolve(_ManifestHandler.PackageEntries.Cast<IPackageIdentifier>()));
-
-                foreach (VersionedCatalogEntry entry in remaining)
+                IEnumerable<VersionedCatalogEntry> requiredPackages = await ResolveDependencies(context);
+                
+                foreach (VersionedCatalogEntry entry in requiredPackages)
                 {
                     if (packageDirectories.Remove($"{entry.Entry.Id}.{entry.Entry.Version}")) continue;
-                    await InstallSinglePackage(entry.Entry.Id, entry.Entry.Version);
+
+                    using var subContext = new TaskContext(
+                        context.Scope?.CreateSubScope($"Install {entry.Entry.Id}.{entry.Entry.Version}"), context.Token);
+                    await InstallSinglePackage(entry.Entry.Id, entry.Entry.Version, subContext);
                 }
 
                 foreach (string packageDirectory in packageDirectories)
