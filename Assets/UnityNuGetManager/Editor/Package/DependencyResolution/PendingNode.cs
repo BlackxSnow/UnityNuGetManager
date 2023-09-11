@@ -1,4 +1,3 @@
-using PlasticGui.WorkspaceWindow.PendingChanges;
 using UnityNuGetManager.NuGetApi;
 
 namespace UnityNuGetManager.Package.DependencyResolution
