@@ -42,7 +42,15 @@ namespace UnityNuGetManager.Package.DependencyResolution
                 DependencyNode node = await Task.Run(() => _PreparedNodes.Take(token), token);
                 token.ThrowIfCancellationRequested();
 
-                ProcessNode(node, context);
+                try
+                {
+                    ProcessNode(node, context);
+                }
+                catch (Exception e)
+                {
+                    e.Data.Add("NodeID", node.Id);
+                    throw;
+                }
                 if (IsFinished()) break;
             }
 
