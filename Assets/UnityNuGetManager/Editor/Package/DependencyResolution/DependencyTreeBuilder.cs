@@ -170,7 +170,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
                 
                 foreach (RegistrationPageLeaf leaf in page.Items)
                 {
-                    NugetSemanticVersion leafVersion = NugetSemanticVersion.Parse(leaf.CatalogEntry.Version);
+                    NugetSemanticVersion leafVersion = NugetSemanticVersion.ParseRange(leaf.CatalogEntry.Version);
                     if (leafVersion < node.TargetVersion) continue;
 
                     if (!node.VersionIsMinimum)
