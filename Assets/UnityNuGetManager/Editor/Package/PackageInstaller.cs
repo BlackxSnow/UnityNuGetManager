@@ -48,6 +48,7 @@ namespace UnityNuGetManager.Package
         {
             new Regex(@"\[Content_Types\]\.xml"),
             new Regex("_rels/.*"),
+            new Regex("ref/.*"),
             new Regex("package/.*"),
             new Regex("lib/.*"),
             new Regex("analyzers/.*")
