@@ -70,8 +70,15 @@ namespace UnityNuGetManager.Package
         public PackageManifestHandler(string manifestFilePath)
         {
             _ManifestFilePath = manifestFilePath;
-            if (!File.Exists(_ManifestFilePath)) throw new InvalidPathException(manifestFilePath);
             _Entries = new Dictionary<string, PackageManifestEntry>();
+            if (!File.Exists(_ManifestFilePath))
+            {
+                var doc = new XmlDocument();
+                doc.AppendChild(doc.CreateElement("packages"));
+                using FileStream packageStream = File.Open(_ManifestFilePath, FileMode.Create);
+                doc.Save(packageStream);
+                return;
+            }
             Load();
         }
     }
