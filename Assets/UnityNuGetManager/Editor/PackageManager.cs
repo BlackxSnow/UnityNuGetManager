@@ -35,11 +35,7 @@ namespace UnityNuGetManager
         [MenuItem("NuGet/Restore")]
         public static void Restore()
         {
-            var progressWindow = EditorWindow.CreateWindow<ProgressWindow>();
-            var scope = new JobScope<string>($"Restoring Packages");
-            using var context = new TaskContext(scope, progressWindow.AssignTask(scope));
-            Instance.Installer.RestorePackages(context);
-            progressWindow.ShowModal();
+            ProgressWindow.DoTaskWithProgress("Restoring Packages", Instance.Installer.RestorePackages);
         }
 
         public PackageManager()
