@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -26,7 +27,9 @@ namespace UnityNuGetManager.UI.Progress
         {
             _CurrentCancellationSource?.Cancel();
             _NextId = 0;
-            _CurrentCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(linkedTokens);
+            _CurrentCancellationSource = linkedTokens.Length > 0 ? 
+                CancellationTokenSource.CreateLinkedTokenSource(linkedTokens)
+                : new CancellationTokenSource();
             _CurrentCancellationSource.Token.Register(OnJobCancelled);
             
             _Roots = new List<TreeViewItemData<string>> { new(_NextId++, scope.Name) };
@@ -41,6 +44,31 @@ namespace UnityNuGetManager.UI.Progress
             return _CurrentCancellationSource.Token;
         }
 
+        public static void DoTaskWithProgress(string scopeName, Func<TaskContext, Task> task)
+        {
+            async void RunTask(TaskContext context, CancellationTokenSource tokenSource)
+            {
+                try
+                {
+                    await task(context);
+                    context.Dispose();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    tokenSource.Cancel();
+                    throw;
+                }
+            }
+            
+            var masterTokenSource = new CancellationTokenSource();
+            var progressWindow = CreateWindow<ProgressWindow>();
+            var jobScope = new JobScope<string>(scopeName);
+            var context = new TaskContext(jobScope, progressWindow.AssignTask(jobScope, masterTokenSource.Token));
+            RunTask(context, masterTokenSource);
+            progressWindow.ShowModal();
+        }
+        
         private async void OnScopeCreated(IJobScope<string> source, IJobScope<string> created)
         {
             if (!_ScopeIds.TryGetValue(source, out int sourceId)) throw new Exception();
