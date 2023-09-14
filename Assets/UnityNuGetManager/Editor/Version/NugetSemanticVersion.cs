@@ -32,6 +32,11 @@ namespace UnityNuGetManager.Version
         public static bool TryParse(string version, out NugetSemanticVersion result)
         {
             Match match = Regex.Match(version, VersionPattern);
+            if (!match.Success)
+            {
+                result = Invalid;
+                return false;
+            }
             result = new NugetSemanticVersion(match);
             return result.IsValid;
         }
@@ -44,6 +49,7 @@ namespace UnityNuGetManager.Version
 
         private NugetSemanticVersion(Match match, bool isStrict = false)
         {
+            if (!match.Success) throw new ArgumentException($"Match.Success was false");
             IsStrict = isStrict;
             Major = int.TryParse(match.Groups[1].ToString(), out int parsedMajor) ? parsedMajor : 0;
             Minor = int.TryParse(match.Groups[2].ToString(), out int parsedMinor) ? parsedMinor : 0;
