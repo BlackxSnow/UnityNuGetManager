@@ -62,8 +62,9 @@ namespace UnityNuGetManager.Package
                 xmlEntry.SetAttribute(ExplicitInstallKey, entry.ExplicitlyInstalled.ToString());
                 root.AppendChild(xmlEntry);
             }
-            
-            doc.Save(File.Open(_ManifestFilePath, FileMode.Create));
+
+            using FileStream rwStream = File.Open(_ManifestFilePath, FileMode.Create);
+            doc.Save(rwStream);
         }
         
         public PackageManifestHandler(string manifestFilePath)
