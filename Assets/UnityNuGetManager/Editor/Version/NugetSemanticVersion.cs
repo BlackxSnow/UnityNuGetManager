@@ -11,12 +11,14 @@ namespace UnityNuGetManager.Version
         public int Revision { get; }
         public string Prerelease { get; }
 
+        public bool IsStrict { get; }
+        
         public static NugetSemanticVersion Zero => new NugetSemanticVersion(0);
         public static NugetSemanticVersion Max => new NugetSemanticVersion(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue);
         public static NugetSemanticVersion Invalid => new NugetSemanticVersion(-1, -1, -1, -1);
 
         public bool IsValid => Major >= 0 && Minor >= 0 && Patch >= 0 && Revision >= 0 && 
-                               (Major+Minor+Patch+Revision > 0 || !string.IsNullOrWhiteSpace(Prerelease));
+                               (!IsStrict || Major+Minor+Patch+Revision > 0 || !string.IsNullOrWhiteSpace(Prerelease));
         
         public override string ToString()
         {
@@ -40,8 +42,9 @@ namespace UnityNuGetManager.Version
                 : throw new ArgumentException($"Invalid version string format: {version}");
         }
 
-        private NugetSemanticVersion(Match match)
+        private NugetSemanticVersion(Match match, bool isStrict = false)
         {
+            IsStrict = isStrict;
             Major = int.TryParse(match.Groups[1].ToString(), out int parsedMajor) ? parsedMajor : 0;
             Minor = int.TryParse(match.Groups[2].ToString(), out int parsedMinor) ? parsedMinor : 0;
             Patch = int.TryParse(match.Groups[3].ToString(), out int parsedPatch) ? parsedPatch : 0;
@@ -54,8 +57,9 @@ namespace UnityNuGetManager.Version
         }
 
         public NugetSemanticVersion(string major, string minor = "0", string patch = "0", string revision = "0", 
-            string prerelease = "")
+            string prerelease = "", bool isStrict = false)
         {
+            IsStrict = isStrict;
             Major = int.Parse(major);
             Minor = int.Parse(minor);
             Patch = int.Parse(patch);
@@ -63,8 +67,10 @@ namespace UnityNuGetManager.Version
             Prerelease = prerelease;
         }
         
-        public NugetSemanticVersion(int major, int minor = 0, int patch = 0, int revision = 0, string prerelease = "")
+        public NugetSemanticVersion(int major, int minor = 0, int patch = 0, int revision = 0, string prerelease = "",
+            bool isStrict = false)
         {
+            IsStrict = isStrict;
             Major = major;
             Minor = minor;
             Patch = patch;
