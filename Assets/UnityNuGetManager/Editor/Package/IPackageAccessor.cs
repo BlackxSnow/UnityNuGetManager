@@ -25,6 +25,7 @@ namespace UnityNuGetManager.Package
         public Task<Dictionary<IPackageSourceInfo, QueryResponse>> QueryPackages(string query, TaskContext context);
 
         public Task<PackageAccessorResult<RegistrationsReponse>> GetRegistrations(string id, TaskContext context);
+        public Task<IEnumerable<RegistrationsReponse>> GetAllRegistrations(string id, TaskContext context);
         public Task<RegistrationsReponse> GetRegistrationsDirect(string url, TaskContext context);
 
         public Task<PackageAccessorResult<DownloadResult>> TryDownloadPackage(string id, string version, TaskContext context);

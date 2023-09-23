@@ -40,6 +40,19 @@ namespace UnityNuGetManager.Package
             return null;
         }
 
+        public async Task<IEnumerable<RegistrationsReponse>> GetAllRegistrations(string id, TaskContext context)
+        {
+            var results = new List<RegistrationsReponse>();
+            foreach (IPackageSourceInfo source in _SourceManager.GetSources())
+            {
+                RegistrationsReponse response = await _Client.GetRegistrations(source, id, context, false);
+                if (response == null) continue;
+                results.Add(response);
+            }
+
+            return results;
+        }
+
         public Task<RegistrationsReponse> GetRegistrationsDirect(string url, TaskContext context)
         {
             return _Client.GetRegistrations(url, context, false);

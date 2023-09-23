@@ -86,12 +86,15 @@ namespace UnityNuGetManager.Package.DependencyResolution
         private async Task<DependencyNode> PrepareNode(PendingNode node, TaskContext context)
         {
 
-            RegistrationsReponse registrations;
+            IEnumerable<RegistrationsReponse> registrations;
             using (TaskContext registrationContext =
                    context.CreateSub($"Getting registrations data for {node.DependencyEntry.Id}"))
             {
-                registrations = await _Accessor.GetRegistrationsDirect(node.DependencyEntry.Registration, registrationContext) ??
-                                (await _Accessor.GetRegistrations(node.DependencyEntry.Id, registrationContext))?.Result;
+                RegistrationsReponse directResponse =
+                    await _Accessor.GetRegistrationsDirect(node.DependencyEntry.Registration, registrationContext);
+                registrations = directResponse != null
+                    ? new[] { directResponse }
+                    : await _Accessor.GetAllRegistrations(node.DependencyEntry.Id, registrationContext);
             }
 
             if (registrations == null)
@@ -162,34 +165,37 @@ namespace UnityNuGetManager.Package.DependencyResolution
             CatalogEntry bestEntry = null;
             NugetSemanticVersion bestVersion = NugetSemanticVersion.Invalid;
             
-            foreach (RegistrationPage page in node.Registrations.Items)
+            foreach (RegistrationsReponse registrations in node.Registrations)
             {
-                NugetSemanticVersion lower = NugetSemanticVersion.Parse(page.Lower);
-                NugetSemanticVersion upper = NugetSemanticVersion.Parse(page.Upper);
-                if (node.TargetVersion < lower || node.TargetVersion > upper) continue;
-                
-                foreach (RegistrationPageLeaf leaf in page.Items)
+                foreach (RegistrationPage page in registrations.Items)
                 {
-                    NugetSemanticVersion leafVersion = NugetSemanticVersion.ParseRange(leaf.CatalogEntry.Version);
-                    if (leafVersion < node.TargetVersion) continue;
-
-                    if (!node.VersionIsMinimum)
+                    NugetSemanticVersion lower = NugetSemanticVersion.Parse(page.Lower);
+                    NugetSemanticVersion upper = NugetSemanticVersion.Parse(page.Upper);
+                    if (node.TargetVersion < lower || node.TargetVersion > upper) continue;
+                
+                    foreach (RegistrationPageLeaf leaf in page.Items)
                     {
-                        if (leafVersion == node.TargetVersion)
-                            return new VersionedCatalogEntry(leaf.CatalogEntry, leafVersion);
-                        continue;
-                    }
+                        NugetSemanticVersion leafVersion = NugetSemanticVersion.ParseRange(leaf.CatalogEntry.Version);
+                        if (leafVersion < node.TargetVersion) continue;
 
-                    if (bestEntry == null)
-                    {
+                        if (!node.VersionIsMinimum)
+                        {
+                            if (leafVersion == node.TargetVersion)
+                                return new VersionedCatalogEntry(leaf.CatalogEntry, leafVersion);
+                            continue;
+                        }
+
+                        if (bestEntry == null)
+                        {
+                            bestEntry = leaf.CatalogEntry;
+                            bestVersion = leafVersion;
+                            continue;
+                        }
+
+                        if (leafVersion >= bestVersion) continue;
                         bestEntry = leaf.CatalogEntry;
                         bestVersion = leafVersion;
-                        continue;
                     }
-
-                    if (leafVersion >= bestVersion) continue;
-                    bestEntry = leaf.CatalogEntry;
-                    bestVersion = leafVersion;
                 }
             }
 

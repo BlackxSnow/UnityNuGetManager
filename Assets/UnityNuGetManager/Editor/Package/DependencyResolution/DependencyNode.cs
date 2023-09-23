@@ -11,7 +11,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
         public string Id;
         public NugetSemanticVersion TargetVersion;
         public bool VersionIsMinimum;
-        public RegistrationsReponse Registrations;
+        public IEnumerable<RegistrationsReponse> Registrations;
         public VersionedCatalogEntry SelectedEntry;
 
         public readonly Dictionary<string, DependencyNode> Dependencies = new();
@@ -29,7 +29,7 @@ namespace UnityNuGetManager.Package.DependencyResolution
 
         public DependencyNode() {}
         public DependencyNode(DependencyNode parent, string id, NugetSemanticVersion targetVersion, bool versionIsMinimum,
-            RegistrationsReponse registrations)
+            IEnumerable<RegistrationsReponse> registrations)
         {
             PrimaryParent = parent;
             Parents.Add(parent);
