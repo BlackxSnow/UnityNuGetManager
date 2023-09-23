@@ -1,6 +1,6 @@
 {
     "name": "com.celestemarina.unitynugetmanager",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "displayName": "Unity NuGet Manager",
     "unity": "2022.3",
     "unityRelease": "7f1",

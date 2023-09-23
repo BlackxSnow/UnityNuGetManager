@@ -2,7 +2,9 @@
     "name": "com.CelesteMarina.UnityNuGetManager.Editor",
     "rootNamespace": "UnityNuGetManager",
     "references": [],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
