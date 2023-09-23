@@ -52,8 +52,9 @@ namespace UnityNuGetManager.NuGetApi
             await source.Initialised.AsTask(source.DisposedToken);
             
             string downloadAddress = Path.Combine(source.BaseAddress, id, version, $"{id}.{version}.nupkg");
+            HttpRequestMessage request = BuildRequest(source, HttpMethod.Get, downloadAddress);
             HttpResponseMessage response =
-                await _Client.SendAsync(new HttpRequestMessage(HttpMethod.Get, downloadAddress), context.Token);
+                await _Client.SendAsync(request, context.Token);
             return response.IsSuccessStatusCode
                 ? new DownloadResult(true, await response.Content.ReadAsStreamAsync(), response.StatusCode)
                 : new DownloadResult(false, null, response.StatusCode);
