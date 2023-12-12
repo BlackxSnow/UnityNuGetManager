@@ -1,9 +1,9 @@
 {
     "name": "com.celestemarina.unitynugetmanager",
-    "version": "0.3.6",
+    "version": "0.3.7",
     "displayName": "Unity NuGet Manager",
     "unity": "2022.3",
-    "unityRelease": "7f1",
+    "unityRelease": "12f1",
     "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.2.1"
     },

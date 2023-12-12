@@ -87,7 +87,7 @@ namespace UnityNuGetManager.Package
         {
             try
             {
-                ZipArchiveEntry nuspecZipEntry = packageArchive.GetEntry($"{id}.nupsec");
+                ZipArchiveEntry nuspecZipEntry = packageArchive.GetEntry($"{id}.nuspec");
                 if (nuspecZipEntry == null)
                 {
                     Debug.LogWarning($"Nuspec entry retrieval '{id}.nuspec' failed");
